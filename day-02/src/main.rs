@@ -32,12 +32,12 @@ impl FromStr for Hand {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-struct RPSGame {
+struct Game {
     first: Hand,
     second: Hand,
 }
 
-impl FromStr for RPSGame {
+impl FromStr for Game {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -46,14 +46,14 @@ impl FromStr for RPSGame {
             .take(2)
             .collect::<Vec<Hand>>();
         
-        Ok(RPSGame {
+        Ok(Game {
             first: hands[0],
             second: hands[1],
         })
     }
 }
 
-impl RPSGame {
+impl Game {
     fn result(&self) -> GameResult {
         match (self.first, self.second) {
             (Hand::Rock, Hand::Rock) => GameResult::Draw,
@@ -73,10 +73,24 @@ impl RPSGame {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum GameResult {
     Win,
     Lose,
     Draw,
+}
+
+impl FromStr for GameResult {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "X" => Ok(GameResult::Lose),
+            "Y" => Ok(GameResult::Draw),
+            "Z" => Ok(GameResult::Win),
+            _ => Err(()),
+        }
+    }
 }
 
 impl GameResult {
@@ -89,17 +103,68 @@ impl GameResult {
     }
 }
 
+#[derive(Debug)]
+struct Suggestion {
+    first: Hand,
+    outcome: GameResult,
+}
+
+impl Suggestion {
+    fn suggestion(&self) -> Hand {
+        match (self.first, self.outcome) {
+            (Hand::Rock, GameResult::Win) => Hand::Paper,
+            (Hand::Rock, GameResult::Draw) => Hand::Rock,
+            (Hand::Rock, GameResult::Lose) => Hand::Scissors,
+            (Hand::Paper, GameResult::Win) => Hand::Scissors,
+            (Hand::Paper, GameResult::Draw) => Hand::Paper,
+            (Hand::Paper, GameResult::Lose) => Hand::Rock,
+            (Hand::Scissors, GameResult::Win) => Hand::Rock,
+            (Hand::Scissors, GameResult::Draw) => Hand::Scissors,
+            (Hand::Scissors, GameResult::Lose) => Hand::Paper,
+        }
+    }
+}
+
+impl FromStr for Suggestion {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let suggestion = s.split(" ")
+            .take(2)
+            .collect::<Vec<&str>>();
+        
+        Ok(Suggestion {
+            first: Hand::from_str(suggestion[0]).unwrap(),
+            outcome: GameResult::from_str(suggestion[1]).unwrap(),
+        })
+    }
+}
+
 fn main() {
     let filename = input_filename();
     let input = read_lines(&filename);
 
     let results = input.iter()
-        .map(|l| RPSGame::from_str(l).unwrap().score());
+        .map(|l| Game::from_str(l).unwrap().score());
 
     // Part 1
     let answer = results.sum::<i32>();
     
     println!("The answer to part one is: {:?}", answer);
+
+    // Part 2
+    let results = input.iter()
+        .map(|l| {
+            let suggestion = Suggestion::from_str(l).unwrap();
+            Game {
+                first: suggestion.first,
+                second: suggestion.suggestion(),
+            }
+        });
+
+    let answer = results.map(|f| f.score()).sum::<i32>();
+
+    println!("The answer to part two is: {:?}", answer);
 }
 
 #[cfg(test)]
@@ -128,12 +193,12 @@ mod tests {
 
     #[test]
     fn parse_games() {
-        let cases: Vec<(&str, Result<RPSGame, ()>)> = vec![
-            ("A Y", Ok(RPSGame { first: Hand::Rock, second: Hand::Paper })),
+        let cases: Vec<(&str, Result<Game, ()>)> = vec![
+            ("A Y", Ok(Game { first: Hand::Rock, second: Hand::Paper })),
         ];
 
         for (game, result) in cases.iter() {
-            let parsed_game = RPSGame::from_str(game);
+            let parsed_game = Game::from_str(game);
             assert_eq!(&parsed_game, result);
         }
     }
