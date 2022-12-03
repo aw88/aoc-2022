@@ -50,11 +50,17 @@ impl Priority for char {
     }
 }
 
-fn intersect_bags(team: &[Bag]) -> char {
-    let bags_ab: HashSet<&char> = team[0].full_bag().intersection(&team[1].full_bag()).cloned().collect();
-    let bags_abc: Vec<&char> = bags_ab.intersection(&team[2].full_bag()).cloned().collect();
-
-    **bags_abc.iter().next().unwrap()
+fn find_badge(team: &[Bag]) -> char {
+    **team
+        .iter()
+        .map(|bag| bag.full_bag())
+        .skip(1)
+        .fold(team[0].full_bag(), |acc, next| {
+            acc.intersection(&next).cloned().collect()
+        })
+        .iter()
+        .next()
+        .unwrap()
 }
 
 fn main() {
@@ -74,7 +80,7 @@ fn main() {
     let binding = bags.collect::<Vec<Bag>>();
     let badges = binding
         .chunks(3)
-        .map(|team| intersect_bags(team))
+        .map(|team| find_badge(team))
         .map(|badge| badge.priority());
 
     let answer = badges.sum::<u32>();
