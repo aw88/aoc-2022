@@ -25,6 +25,46 @@ fn is_visible(row: &Vec<usize>, index: usize) -> bool {
     visible_from_left | visible_from_right
 }
 
+fn scenic_score(grid: &Vec<Vec<usize>>, cell: (usize, usize)) -> usize {
+    let (x, y) = cell;
+    let height = grid[y][x];
+
+    let mut up = 0;
+    let mut down = 0;
+    let mut left = 0;
+    let mut right = 0;
+
+    for i in (0..y).rev() {
+        up += 1;
+        if grid[i][x] >= height {
+            break;
+        }
+    }
+
+    for i in y + 1..grid.len() {
+        down += 1;
+        if grid[i][x] >= height {
+            break;
+        }
+    }
+
+    for i in (0..x).rev() {
+        left += 1;
+        if grid[y][i] >= height {
+            break;
+        }
+    }
+
+    for i in x + 1..grid[0].len() {
+        right += 1;
+        if grid[y][i] >= height {
+            break;
+        }
+    }
+
+    up * down * left * right
+}
+
 fn main() {
     let filename = input_filename();
     let input = read_lines(&filename);
@@ -51,7 +91,17 @@ fn main() {
     }
 
     let answer = visible_trees.len();
-    println!("The solution to part one is: {:?}", answer);
+    println!("The answer to part one is: {:?}", answer);
+
+    // Part 2
+    let scenic_scores: Vec<Vec<usize>> = grid.iter().enumerate().map(|(y, row)| {
+        row.iter().enumerate().map(|(x, _)| {
+            scenic_score(&grid, (x, y))
+        }).collect()
+    }).collect();
+
+    let answer = scenic_scores.iter().map(|row| row.iter().max().unwrap()).max().unwrap();
+    println!("The answer to part two is: {:?}", answer);
 }
 
 #[cfg(test)]
